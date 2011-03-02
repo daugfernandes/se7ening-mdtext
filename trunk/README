@@ -1,0 +1,50 @@
+;;   README for MDTEXT
+;;
+;; ----------------------------------------------------------------------
+;;
+;;   Copyright (C) 2011  David Fernandes
+;;                       <daugfernandes@aim.com>
+;;
+;;   This program is free software: you can redistribute it and/or modify
+;;   it under the terms of the GNU General Public License as published by
+;;   the Free Software Foundation, either version 3 of the License, or
+;;   (at your option) any later version.
+;;
+;;   This program is distributed in the hope that it will be useful,
+;;   but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;   GNU General Public License for more details.
+;;
+;;   You should have received a copy of the GNU General Public License
+;;   along with this program named license.txt.
+;;   If not, see <http://www.gnu.org/licenses/>
+;;
+;; ----------------------------------------------------------------------
+
+;STARTING
+;========
+
+; Loading the program
+
+(load "s7lusiadas.lsp")   ; This should load all the files 
+                          ; needed to run the main program.
+
+;HOW TO (BASIC OPERATION)
+;========================
+
+; Creating a mdtext-iln structure for "oslusiadas.txt")
+
+(setq book (file-to-mdtext-iln "oslusiadas.txt"))
+
+; Along with it, a strucure called *word-table* will be created and
+; populated with all the unique words found in "oslusiadas.txt".
+
+; Generating a SQL script file for *word-table* INSERT script
+(save-relation (words-to-sql *word-table*) "words_script.sql")
+
+; Generatin a SQL script file for book INSERT script
+(save-relation (mdtext-iln-to-sql book 1 1 1 1) "book.sql")
+
+; Re-generating the original text
+(save-relation (mdtext-iln-to-txt book) "oslusiadas_remade.txt")
+
