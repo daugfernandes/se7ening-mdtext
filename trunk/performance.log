@@ -1,0 +1,27 @@
+COMPAQ casa - AMD64
+
+(file-to-mdtext-iln "oslusiadas.txt")
+Real time: 7.875134 sec.
+Run time: 7.868492 sec.
+Space: 292938024 Bytes
+GC: 90, GC time: 0.776045 sec.
+
+(words-to-sql *word-table*)
+Real time: 0.36528 sec.
+Run time: 0.360023 sec.
+Space: 26363616 Bytes
+GC: 7, GC time: 0.080006 sec.
+
+(mdtext-iln-to-sql book 1 1 1 1)
+Real time: 2.694126 sec.
+Run time: 2.692169 sec.
+Space: 226682024 Bytes
+GC: 33, GC time: 0.464028 sec.
+
+(mdtext-iln-to-txt book)
+Real time: 0.183881 sec.
+Run time: 0.184012 sec.
+Space: 11438656 Bytes
+GC: 1, GC time: 0.060004 sec.
+
+
