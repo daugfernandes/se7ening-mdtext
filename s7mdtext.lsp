@@ -368,7 +368,7 @@
 
     ((char= c #\$)
      (make-node (list :c (incf *k-chapters*)))
-     (print (format t "~a " *k-chapters*))
+     (print (format t "Chapter: ~a " *k-chapters*))
      (setf *k-paragraphs* 0)
      (next-state #'b-state))
 
@@ -402,7 +402,7 @@
     ((char= c #\$)
      (pop *tree*)
      (make-node (list :c (incf *k-chapters*)))
-     (print (format t "~a " *k-chapters*))
+     (print (format t "Chapter: ~a " *k-chapters*))
      (setf *k-paragraphs* 0)
      (next-state #'b-state))
 
@@ -439,7 +439,7 @@
      (pop *tree*) ; paragraph
      (pop *tree*) ; chapter
      (make-node (list :c (incf *k-chapters*)))
-     (print (format t "~a " *k-chapters*))
+     (print (format t "Chapter: ~a " *k-chapters*))
      (setf *k-paragraphs* 0)
      (next-state #'g-state))
 
