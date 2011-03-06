@@ -39,9 +39,12 @@
 ;;----------------------------------------------------------------------
 (defun push-tail (element L)
   "Inserts `element' at the tail of list `L'."
-  (if (null (cdr L))
-    (setf (cdr L) (cons element nil))
-    (push-tail element (cdr L))))
+  (loop
+     (if (null (cdr L))
+	 (progn
+	   (setf (cdr L) (cons element nil))
+	   (return))
+	 (setq L (cdr L)))))
 
 ;;----------------------------------------------------------------------
 (defmacro pop-tail (L)
