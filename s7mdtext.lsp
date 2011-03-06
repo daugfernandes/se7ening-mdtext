@@ -134,7 +134,7 @@
 	     words-hash-table)))
 
 (defun chars-sql (str)
-  "Double some SQL problematic chars like ' and \"."
+  "Double some SQL problematic chars like '."
   (replace-all str "'" "''"))
 
 (defun mdtext-iln-to-sql (book last-book-id last-chapter-id last-paragraph-id last-phrase-id)
@@ -202,14 +202,18 @@
    hard-coded here is specific for 'Os Lusíadas'."
 
   (with-output-to-string (stream)
-    (dolist (chapter (chapters book)) 
-      (progn 
-	(format stream "~%~%Canto ~a:~%" (nth 1 chapter)) ; change as needed (Lusíadas specific)
-	(dolist (paragraph (paragraphs chapter))
-	  (progn
-	    (format stream "~%~a~%" (nth 1 paragraph))
-	    (dolist (phrase (phrases paragraph))
-	      (format stream "~a~%" (getf (nth 1 (cdr phrase)) :vall)))))))))
+    (mapcar 
+     #'(lambda (chapter)
+	 (format stream "~%~%Canto ~a:~%" (nth 1 chapter)) ; change as needed (Lusíadas specific)
+	 (mapcar 
+	  #'(lambda (paragraph)
+	      (format stream "~%~a~%" (nth 1 paragraph))
+	      (mapcar 
+	       #'(lambda (phrase)
+		   (format stream "~a~%" (getf (nth 1 (cdr phrase)) :vall)))
+	       (phrases paragraph)))
+	  (paragraphs chapter)))
+     (chapters book))))
 
 ;; TXT2ILN
 
