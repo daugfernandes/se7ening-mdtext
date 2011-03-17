@@ -223,14 +223,15 @@
   (with-open-file (stream filename :direction :input)
     (stream-to-mdtext-iln stream)))
 
-(defun stream-to-mdtext-iln (stream)
+;; use a-state for books
+(defun stream-to-mdtext-iln (stream entry-state-fn)
   "Parses a stream of characters into mkdtext-iln."
   (setf *document* (list :root)
         *tree* (list *document*)
         *character-stack* (make-empty-string)
 	*k-chapters* 0
 	*k-words* 0
-        *state* #'a-state
+        *state* entry-state-fn
 	*word-table* (make-hash-table :test 'equal))
 
   (make-node (list :b))
