@@ -32,22 +32,183 @@
 (defpackage :se7ening.sonetos
   (:use :se7ening.mdtext))
 
-(defun sonetos ()
-  (loop for i in 
-       (cdr 
-	(getf 
-	 (http-to-iln "http://pt.wikisource.org/wiki/Portal:Sonetos_de_Lu%C3%ADs_Vaz_de_Cam%C3%B5es")
-	 :root))
-     do
-       (setf url  (concatenate 'string "http://pt.wikisource.org" (getf i :link)))
-       (setf desc (getf i :desc))
-       (print desc)))
+(defvar *k-sonetos* 0)
+(defvar *k-estrofes* 0)
 
-(defun http-to-iln (url)
+(defun sonetos ()
+  (let ((book (list)))
+    (setf *k-sonetos* 0)
+    (loop for i in 
+	 (cdr 
+	  (getf 
+	   (http-to-iln "http://pt.wikisource.org/wiki/Portal:Sonetos_de_Lu%C3%ADs_Vaz_de_Cam%C3%B5es" #'html-li-state)
+	   :root))
+       do
+	 (setf book 
+	       (append 
+		book
+		(list (getf
+		 (getf 
+		  (soneto 
+		   (concatenate 'string "http://pt.wikisource.org" (getf i :link))
+		   (getf i :desc))
+		  :root)
+		 :b)))))
+    book))
+
+(defun soneto (url nome)
+  (incf *k-sonetos*)
+  (http-to-iln url #'html-soneto-state))
+  ;(list :root (list :b (list (list url) (list nome)))))
+
+(defun soneto2 (l)
+  (let ((book (list)))
+    (setf *k-sonetos* 0)
+    (loop for i in l do
+	 (incf *k-sonetos*)
+	 (push (getf (getf (http-to-iln (caar i) #'html-soneto-state) :root) :b) book))
+    book))
+       
+
+(defun http-to-iln (url entry-state-fn)
   "Opens a url and returns a list of its content's lines."
-  (setf *k-chars-processed* 0)
+  (setf *k-estrofes* 0)
   (ext:with-http-input (stream url)
-    (stream-to-mdtext-iln stream #'html-li-state)))
+    (stream-to-mdtext-iln stream entry-state-fn)))
+
+
+"http://pt.wikisource.org/wiki/vossos_olhos,_senhora,_que_competem" "Vossos olhos, Senhora, que competem" 
+
+
+;; state functions for getting the sonets it self
+(defun html-soneto-state (c)
+  (when (char= c #\")
+    (next-state #'html-soneto-state1)))
+
+(defun html-soneto-state1 (c)
+  (if (char= c #\p)
+      (next-state #'html-soneto-state2)
+      (next-state #'html-soneto-state)))
+
+(defun html-soneto-state2 (c)
+  (if (char= c #\o)
+      (next-state #'html-soneto-state3)
+      (next-state #'html-soneto-state)))
+
+(defun html-soneto-state3 (c)
+  (if (char= c #\e)
+      (next-state #'html-soneto-state4)
+      (next-state #'html-soneto-state)))
+
+(defun html-soneto-state4 (c)
+  (if (char= c #\m)
+      (next-state #'html-soneto-state5)
+      (next-state #'html-soneto-state)))
+
+(defun html-soneto-state5 (c)
+  (if (char= c #\")
+      (next-state #'html-soneto-state6)
+      (next-state #'html-soneto-state)))
+
+(defun html-soneto-state6 (c)
+  (cond 
+    ((char= c #\>)
+     (make-node (list :c *k-sonetos*))
+     (make-node (list :e (incf *k-estrofes*)))
+     (setf *k-versos* 0)
+     (next-state #'html-soneto-state7))
+    (t
+     (next-state #'html-soneto-state))))
+
+(defun html-soneto-state7 (c)
+  (cond
+    ((char= c #\Linefeed)) ; keep state
+    ((char= c #\Return))   ; keep state
+    ((char= c #\<)
+     (next-state #'html-soneto-state8))
+    (t
+     (add-char c *character-stack*))))
+
+(defun html-soneto-state8 (c)
+  (cond
+    ((char= c #\b)
+     (next-state #'html-soneto-state-br))
+    ((char= c #\/)
+     (next-state #'html-soneto-state-end))
+    (t
+     (next-state #'html-soneto-state-ignore-tag))))
+
+(defun html-soneto-state-ignore-tag (c)
+  (when (char= c #\>)
+    (next-state #'html-soneto-state7)))
+
+(defun html-soneto-state-br (c)
+  (if (char= c #\r)
+      (next-state #'html-soneto-state-br1)
+      (next-state #'html-soneto-state-ignore-tag)))
+
+(defun html-soneto-state-br1 (c)
+  (if (char= c #\Space)
+      (next-state #'html-soneto-state-br2)
+      (next-state #'html-soneto-state-ignore-tag)))
+
+(defun html-soneto-state-br2 (c)
+  (if (char= c #\/)
+      (next-state #'html-soneto-state-br3)
+      (next-state #'html-soneto-state-ignore-tag)))
+
+(defun html-soneto-state-br3 (c)
+  (cond 
+    ((char= c #\>)
+     (cond 
+       ((> (length *character-stack*) 0)
+	(let ((aux *character-stack*))
+	  (make-node (list :v (incf *k-versos*)))
+	  (make-node (list :vall))
+	  (use-chars-read aux)
+	  (pop *tree*)
+	  (phrase-to-mdtext-iln *character-stack*)
+	  (pop *tree*)
+	  (setf *character-stack* (make-empty-string)))
+	(next-state #'html-soneto-state7))
+       (t
+	(pop *tree*)
+	(make-node (list :e (incf *k-estrofes*)))
+	(setf *k-versos* 0)
+	(next-state #'html-soneto-state7))))
+    (t
+     (next-state #'html-soneto-state-ignore-tag))))
+
+(defun html-soneto-state-end (c)
+  (if (char= c #\d)
+      (next-state #'html-soneto-state-end1)
+      (next-state #'html-soneto-state-ignore-tag)))
+
+(defun html-soneto-state-end1 (c)
+  (if (char= c #\i)
+      (next-state #'html-soneto-state-end2)
+      (next-state #'html-soneto-state-ignore-tag)))
+
+(defun html-soneto-state-end2 (c)
+  (cond 
+    ((char= c #\v)
+     (let ((aux *character-stack*))
+       (make-node (list :v (incf *k-versos*)))
+       (make-node (list :vall))
+       (use-chars-read aux)
+       (pop *tree*)
+       (phrase-to-mdtext-iln *character-stack*)
+       (pop *tree*)
+       (setf *character-stack* (make-empty-string)))
+     (next-state #'html-soneto-state-trash))
+    (t
+     (next-state #'html-soneto-state-ignore-tag))))
+
+(defun html-soneto-state-trash (c)
+  (next-state #'html-soneto-state-trash))
+
+
+;; state function for getting sonets url from list page
 
 (defun html-li-state (c)
   (when (char= c #\<)

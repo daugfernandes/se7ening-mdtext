@@ -177,7 +177,7 @@
 
 	      (dolist (phrase (phrases paragraph))
 		(progn
-
+		  (print phrase)
 		  (insert-phrase-sql
 		     stream
 		     last-paragraph-id
@@ -221,7 +221,7 @@
   "Parses an entire text file into mdtext-iln."
   (setf *k-chars-processed* 0)
   (with-open-file (stream filename :direction :input)
-    (stream-to-mdtext-iln stream)))
+    (stream-to-mdtext-iln stream #'a-state)))
 
 ;; use a-state for books
 (defun stream-to-mdtext-iln (stream entry-state-fn)
@@ -230,9 +230,10 @@
         *tree* (list *document*)
         *character-stack* (make-empty-string)
 	*k-chapters* 0
-	*k-words* 0
+	;*k-words* 0
         *state* entry-state-fn
-	*word-table* (make-hash-table :test 'equal))
+	;*word-table* (make-hash-table :test 'equal)
+	)
 
   (make-node (list :b))
   
@@ -256,21 +257,26 @@
   (with-input-from-string (s str)
     (phrase-stream-to-mdtext-iln s)))
 
+
 (defun phrase-stream-to-mdtext-iln (stream)
   "Parses a stream of characters into mdtext-iln."
   (next-state #'aa-state)
 
-  (catch 'end-of-file
-    (loop
-      (let ((c (read-char stream nil :eof)))
-	(progn
-	  (if 
-	   (eq c :eof)
-	      (progn
-		(downcase *character-stack*)
-		(use-word *character-stack*)
-		(throw 'end-of-file nil))
-	   (funcall *state* c)))))))
+  (loop for line = (read-line stream nil 'foo)
+     until (eq line 'foo)
+     do 
+       (with-input-from-string (stream line)
+	 (catch 'end-of-file
+	   (loop
+	      (let ((c (read-byte stream nil :eof)))
+		(progn
+		  (if 
+		   (eq c :eof)
+		   (progn
+		     (downcase *character-stack*)
+		     (use-word *character-stack*)
+		     (throw 'end-of-file nil))
+		   (funcall *state* c)))))))))
 
 ;; DFA - states
 
