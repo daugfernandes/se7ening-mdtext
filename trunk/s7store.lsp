@@ -57,3 +57,4 @@
 	     ht)
     (save-relation rel filename)))
     
+; TODO: load-hash-table
